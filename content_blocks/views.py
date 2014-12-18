@@ -3,11 +3,26 @@ from django.contrib.auth.decorators import permission_required
 from django.contrib import messages
 from django.core import serializers
 from django.core.serializers.base import DeserializationError
-from django.views.generic import simple
 
 from content_blocks.forms import ContentBlockForm, ImageBlockForm
 from content_blocks.models import ContentBlock, ImageBlock
 from content_blocks.utils import get_admin_list_page, get_admin_edit_page
+
+from django.views.generic import TemplateView
+from django.views.generic import RedirectView
+
+class DirectTemplateView(TemplateView):
+    extra_context = None
+
+    def get_context_data(self, **kwargs):
+        context = super(self.__class__, self).get_context_data(**kwargs)
+        if self.extra_context is not None:
+            for key, value in self.extra_context.items():
+                if callable(value):
+                    context[key] = value()
+                else:
+                    context[key] = value
+        return context
 
 
 def _block_edit(request, model_name, name, model_class, form_class):
@@ -21,7 +36,7 @@ def _block_edit(request, model_name, name, model_class, form_class):
             if form.is_valid():
                 block = form.save()
 
-                return simple.direct_to_template(request, "content_blocks/%s.html" % model_name, extra_context={
+                return DirectTemplateView.as_view(template_name="content_blocks/%s.html" % model_name, extra_context={
                     "%s" % model_name: block,
                     "wrapper": False,
                     "editable": True,
@@ -29,7 +44,7 @@ def _block_edit(request, model_name, name, model_class, form_class):
                     "DEBUG": settings.DEBUG,
                 })
         elif request.GET.has_key("cancel"):
-            return simple.direct_to_template(request, "content_blocks/%s.html" % model_name, extra_context={
+            return DirectTemplateView.as_view(template_name="content_blocks/%s.html" % model_name, extra_context={
                 "%s" % model_name: block,
                 "wrapper": False,
                 "editable": True,
@@ -39,14 +54,13 @@ def _block_edit(request, model_name, name, model_class, form_class):
         else:
             form = form_class(instance=block)
 
-        return simple.direct_to_template(request, "content_blocks/%s_edit.html" % model_name, extra_context={
+        return DirectTemplateView.as_view(template_name="content_blocks/%s.html" % model_name, extra_context={
             "form": form,
             "%s" % model_name: block,
             "markup": markup,
         })
     else:
-        return simple.redirect_to(request, get_admin_edit_page(block))
-
+        return RedirectView.as_view(url=get_admin_edit_page(block))
 
 @permission_required("content_blocks.change_contentblock")
 def content_block_edit(request, name):
@@ -90,4 +104,4 @@ def content_block_json_upload(request):
         except (DeserializationError, ValueError):  # NOTE: ValueError is caught only for Django<=1.3
             messages.error(request, 'JSON File Invalid')
 
-    return simple.redirect_to(request, get_admin_list_page(ContentBlock))
+    return RedirectView.as_view(url=get_admin_list_page(ContentBlock))
