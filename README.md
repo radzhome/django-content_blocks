@@ -13,7 +13,9 @@ area of the selected block.
 Installation
 ------------
 
-**Dependencies**: django, markdown, django-linguo
+**Dependencies**: django>=1.4x, markdown, django-linguo
+
+Now compatible with django 1.7.x.
 
 To install, download the source tarball, unpack and run ``pip install .``
 This will add content_blocks to your python path as well as pull in the 
