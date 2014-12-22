@@ -1,4 +1,4 @@
-from django.conf.urls import url, patterns
+from django.conf.urls import url, patterns  # dj 1.5 + compatibility
 
 
 urlpatterns = patterns('content_blocks.views',
